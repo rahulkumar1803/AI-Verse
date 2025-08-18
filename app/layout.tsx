@@ -2,7 +2,6 @@ import type { Metadata } from "next";
 import { Geist, Geist_Mono, Poppins } from "next/font/google";
 import "./globals.css";
 import AppContextProvider from "./AppContext";
-import { ClerkProvider } from "@clerk/nextjs";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -32,11 +31,9 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <ClerkProvider>
         <AppContextProvider>
         <body className={poppins.variable}>{children}</body>
       </AppContextProvider>
-      </ClerkProvider>
     </html>
   );
 }
