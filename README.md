@@ -37,7 +37,6 @@ It comes with **ready-to-use templates, history tracking, favorites, subscriptio
 ## ⚙️ Installation & Setup
 
 Clone the repo:
-
 ```bash
 git clone https://github.com/rahulkumar1803/AI-Verse.git
 cd AI-Verse
@@ -46,7 +45,7 @@ cd AI-Verse
 ## ⚙️ Installation & Setup
 
 npm install
-# or
+
 yarn install
 
 
