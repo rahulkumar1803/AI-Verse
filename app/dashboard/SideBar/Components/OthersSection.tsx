@@ -1,15 +1,25 @@
 "use client";
 import { useAppContext } from "@/app/AppContext";
 import React from "react";
-import { MdDarkMode, MdSettings, MdLogout, MdLightMode } from "react-icons/md"
-
+import { MdDarkMode, MdSettings, MdLogout, MdLightMode } from "react-icons/md";
+import { useRouter } from "next/navigation"; // Import the router
+import { useClerk } from "@clerk/nextjs"; // Import useClerk for signOut
 
 function OthersSection() {
   const {
-    secondMenuItemsObject: { secondMenuItems, setSecondMenuItems },
+    secondMenuItemsObject: { secondMenuItems },
     isDarkModeObject: { isDarkMode, setIsDarkMode },
-    isSideBarHiddenObject: { isSideBarHidden, setIsSideBarHidden },
+    isSideBarHiddenObject: { isSideBarHidden },
   } = useAppContext();
+
+  // Initialize the router and clerk's signOut function
+  const router = useRouter();
+  const { signOut } = useClerk();
+
+  // This function will handle the sign-out process and redirect
+  const handleLogout = () => {
+    signOut(() => router.push("/")); // Sign out and then redirect to the homepage
+  };
 
   function updateDarkModeIcon(
     isDarkMode: boolean
@@ -17,25 +27,30 @@ function OthersSection() {
     if (isDarkMode) {
       return MdDarkMode;
     }
-
     return MdLightMode;
   }
+
   return (
     <div className="mt-10 pr-3">
-      <hr></hr>
+      <hr />
       <ul className="mt-6 flex flex-col gap-[4px]">
         {secondMenuItems.map((item, index) => (
           <li
             key={index}
-            className="flex items-center justify-between gap-2 text-slate-400"
+            onClick={item.label === "Log Out" ? handleLogout : undefined}
+            // The className is reverted to your original version
+            className="flex items-center justify-between gap-2 text-slate-400 cursor-pointer"
           >
             <div className="flex gap-2 items-center py-[6px] px-2">
               {item.label === "Dark Mode"
                 ? React.createElement(updateDarkModeIcon(isDarkMode))
                 : React.createElement(item.icon)}
-              <span 
-              style={{display: isSideBarHidden ? "none" : "block"}}
-              className="text-[14px]">{item.label}</span>
+              <span
+                style={{ display: isSideBarHidden ? "none" : "block" }}
+                className="text-[14px]"
+              >
+                {item.label}
+              </span>
             </div>
 
             {item.label === "Dark Mode" && <DarkModeToggle />}
@@ -50,8 +65,7 @@ function OthersSection() {
       if (option === "right") {
         setIsDarkMode(true);
         localStorage.setItem("isDarkMode", JSON.stringify(true));
-      }
-      else {
+      } else {
         setIsDarkMode(false);
         localStorage.setItem("isDarkMode", JSON.stringify(false));
       }
@@ -59,8 +73,9 @@ function OthersSection() {
 
     return (
       <div
-        className={`w-[30px] h-[17px] relative rounded-xl flex ${!isDarkMode ? "bg-slate-200" : "bg-purple-100"
-          } cursor-pointer`}
+        className={`w-[30px] h-[17px] relative rounded-xl flex ${
+          !isDarkMode ? "bg-slate-200" : "bg-purple-100"
+        } cursor-pointer`}
       >
         <div className="h-full w-[45px] z-40 flex justify-center items-center">
           {/* left */}
@@ -76,14 +91,16 @@ function OthersSection() {
         </div>
         {/* RoundCircle */}
         <div
-          className={`w-[10px] absolute h-[10px] top-[3px] ${!isDarkMode ? "bg-white" : "bg-purple-600"
-            } transform
-        rounded-full transition-all ${isDarkMode ? "right-[3px]" : "left-[3px]"
-            }`}
+          className={`w-[10px] absolute h-[10px] top-[3px] ${
+            !isDarkMode ? "bg-white" : "bg-purple-600"
+          } transform
+        rounded-full transition-all ${
+          isDarkMode ? "right-[3px]" : "left-[3px]"
+        }`}
         ></div>
       </div>
-    )
+    );
   }
 }
 
-export default OthersSection
+export default OthersSection;
