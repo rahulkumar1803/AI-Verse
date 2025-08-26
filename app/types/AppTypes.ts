@@ -61,9 +61,13 @@ export type SingleTemplate = {
 }
 
 // ✅ Define the type for the new fake user state
-export type FakeUser = {
+export type User = {
     isPro: boolean;
     cumulativeWords: number;
+    firstName: string,
+    lastName: string,
+    userId: string,
+    imageUrl: string,
 };
 
 
@@ -152,7 +156,7 @@ export type AppType = {
 
     // ✅ Add the new fakeUserObject to your main context type
     fakeUserObject: {
-        fakeUser: FakeUser;
-        setFakeUser: React.Dispatch<React.SetStateAction<FakeUser>>;
+        fakeUser: User;
+        setFakeUser: React.Dispatch<React.SetStateAction<User>>;
     };
 };

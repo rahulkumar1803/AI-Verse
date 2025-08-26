@@ -21,7 +21,7 @@ type SingleError = {
   message: string;
 };
 
-export function countWords(text: string) : number {
+export function countWords(text: string): number {
   return text.trim().split(/\s+/).filter((word) => word.length > 0).length;
 }
 
@@ -31,8 +31,9 @@ export default function LeftSection() {
     isDarkModeObject: { isDarkMode },
     windowWidthObject: { windowWidth },
     allTemplatesObject: { allTemplates },
-    contentGeneratedObject: {contentGenerated , setContentGenerated},
-    allHistoryDataObject: {allHistoryData , setAllHistoryData},
+    contentGeneratedObject: { contentGenerated, setContentGenerated },
+    allHistoryDataObject: { allHistoryData, setAllHistoryData },
+    fakeUserObject:{fakeUser,setFakeUser},
   } = useAppContext();
 
   const [isLoading, setIsLoading] = useState(false);
@@ -40,7 +41,7 @@ export default function LeftSection() {
   function TemplateForm() {
     const {
       mainTopicInputObject: { mainTopicInput, setMainTopicInput },
-      errorsObject: { setErrors , errors},
+      errorsObject: { setErrors, errors },
       selectLanguageObject: { selectLanguage },
       keywordsObject: { keywords },
       toneOrStyleInputObject: { toneOrStyleInput },
@@ -70,19 +71,19 @@ export default function LeftSection() {
         },
       ];
 
-      const updateErrors : SingleError[] = errors.map((singleError) => {
+      const updateErrors: SingleError[] = errors.map((singleError) => {
         const field = filedsToCheck.find((f) => f.label === singleError.label);
         let hasError = false;
 
-        if(field){
-          if(field.condition){
+        if (field) {
+          if (field.condition) {
             hasError = field.condition(field.value);
-          } else{
+          } else {
             hasError = field.value === "";
           }
         }
 
-        return {...singleError , show : hasError};
+        return { ...singleError, show: hasError };
       });
 
       setErrors(updateErrors);
@@ -99,8 +100,8 @@ export default function LeftSection() {
 
       console.log(isSelectedLanguagevalid);
 
-      if(isMainTopicValid || isSelectedLanguagevalid || isKeywordsValid){
-        try{
+      if (isMainTopicValid || isSelectedLanguagevalid || isKeywordsValid) {
+        try {
           setIsLoading(true);
 
           const result = await generateContent(
@@ -110,24 +111,39 @@ export default function LeftSection() {
             selectLanguage,
             audienceInput,
             keywords
-          ); 
+          );
           let words = countWords(result.content);
-          if(result && selectedTemplate){
+          if (result && selectedTemplate) {
             const newHistory: HistoryData = {
               id: uuidv4(),
-              clerkUserId: "123",
+              clerkUserId: fakeUser.userId,
               template: selectedTemplate.title,
               title: result.theTitle,
               content: result.content || "",
               createdAt: new Date().toISOString(),
               totalWords: words,
             };
+            
+            const updatedWordCount = fakeUser.cumulativeWords + words;
 
-            setContentGenerated(result.content);
-            setAllHistoryData([...allHistoryData , newHistory]);
-            toast.success("The Content has been generated sucessfully");
+            const updateResponse =  await updateUserWordCountInDB(fakeUser.userId, updatedWordCount);
+
+            if(updateResponse){
+              const updateFakeUser = {
+                ...fakeUser,
+                cumulativeWords: updatedWordCount,
+              };
+              
+              await addHistoryToDatabase(newHistory);
+
+              setContentGenerated(result.content);
+              setAllHistoryData([...allHistoryData, newHistory]);
+              setFakeUser(updateFakeUser);
+              toast.success("The Content has been generated sucessfully");
+            }
+
           }
-        } catch(error){
+        } catch (error) {
           console.log(error);
           toast.error("Something went wrong...");
         } finally {
@@ -167,4 +183,53 @@ export default function LeftSection() {
     </div>
   )
 
+}
+
+async function updateUserWordCountInDB(userId: string, newTotalWords: number) {
+  try {
+    const response = await fetch('/api/users', {
+      method: 'PUT',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({
+        id: userId,
+        accumulatedWords: newTotalWords,
+      }),
+    });
+    if (!response.ok) {
+      throw new Error('Server responded with an error during word count update');
+    }
+
+    const data  = await response.json();
+    return data;
+    console.log('Database updated with new word count.');
+  } catch (error) {
+    console.error('Error updating word count in DB:', error);
+    toast.error('Could not save your new word count.');
+    return null;
+  }
+}
+
+export async function addHistoryToDatabase(newHistory: HistoryData) {
+  try {
+    const postHistoryResponse = await fetch('/api/histories', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      // Convert the newHistory object to a JSON string for the request body
+      body: JSON.stringify(newHistory),
+    });
+
+    if (!postHistoryResponse.ok) {
+      toast.error('Failed to save history entry.');
+      throw new Error('Failed to save history');
+    }
+
+    // Return the response if needed, for example, to get the saved object
+    return postHistoryResponse.json(); 
+  } catch (error) {
+    console.error('Error saving history:', error);
+    // Re-throw the error so the calling function can handle it
+    throw error;
+  }
 }

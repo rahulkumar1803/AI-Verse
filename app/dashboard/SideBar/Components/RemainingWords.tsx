@@ -14,10 +14,10 @@ function RemainingWords() {
         0
     );
     const challengeText = "AI-Generated Content";
-    const progressText = `${fakeUser.cumulativeWords} / ${!fakeUser.isPro ? "1000" : "100,000"} Words generated`
+    const progressText = `${fakeUser.cumulativeWords} / ${!fakeUser.isPro ? "100,000" : "100,000,000,000"} Words generated`
     const upgradeButtonText = "Upgrade to pro";
     function progressBarCalculation() {
-        const divider = !fakeUser.isPro ? 1000 : 100000;
+        const divider = !fakeUser.isPro ? 100000 : 100000000000;
         const results = (fakeUser.cumulativeWords / divider) * 100;
 
         if (results >= 100) {

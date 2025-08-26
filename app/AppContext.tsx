@@ -4,20 +4,29 @@ import React, { createContext, useContext, useState, useEffect } from "react";
 import { LuLayoutDashboard, LuWholeWord } from "react-icons/lu";
 import { MdHistory, MdSubscriptions, MdDarkMode, MdLogout } from "react-icons/md";
 import { TbTemplate } from "react-icons/tb";
-import { IoDocumentAttachOutline } from 'react-icons/io5'
-import { IoMdTime } from 'react-icons/io'
-import { BiChart } from 'react-icons/bi'
+import { IoDocumentAttachOutline } from "react-icons/io5";
+import { IoMdTime } from "react-icons/io";
+import { BiChart } from "react-icons/bi";
 import { RiReplay15Line, RiReplay5Line, RiReplay30Line } from "react-icons/ri";
 import { CiHeart } from "react-icons/ci";
 
 import {
-    AppType, MenuItem, SecondMenuItem, StatsDropDownItem, DaysDropDownItem, SingleFilteringItem, HistoryData, FakeUser
+    AppType,
+    MenuItem,
+    SecondMenuItem,
+    StatsDropDownItem,
+    DaysDropDownItem,
+    SingleFilteringItem,
+    HistoryData,
+    User,
 } from "./types/AppTypes";
 import { templatesArray } from "./LocalData/templates";
 import { SingleTemplateExtended } from "./dashboard/History/AllHistory";
-import { resolve } from "path";
 import { newHistoryData } from "./LocalData/mainData";
 import { templateFilteringItemsArray } from "./LocalData/templateFilteringItems";
+
+import { useUser } from "@clerk/nextjs";
+import { toast } from "react-hot-toast";
 
 // Default fallback
 const defaultState: AppType = {
@@ -85,29 +94,36 @@ const defaultState: AppType = {
         openConfirmationWindow: false,
         setOpenConfirmationWindow: () => { },
     },
-
     selectedHistoryEntryObject: {
         selectedHistoryEntry: null,
         setSelectedHistoryEntry: () => { },
     },
     fakeUserObject: {
-        fakeUser: { isPro: false, cumulativeWords: 0 },
+        fakeUser: {
+            isPro: false,
+            cumulativeWords: 0,
+            firstName: "",
+            lastName: "",
+            userId: "",
+            imageUrl: "",
+        },
         setFakeUser: () => { },
-    }
+    },
 };
-
 
 // Create context
 const AppContext = createContext<AppType>(defaultState);
 
 export default function AppContextProvider({ children }: { children: React.ReactNode }) {
+    const { user } = useUser(); // ✅ useUser inside component
+
     // Menu states
     const [mainMenuItmes, setMainMenuItems] = useState<MenuItem[]>([
         { icon: LuLayoutDashboard, label: "DashBoard", isSelected: true },
         { icon: MdHistory, label: "History", isSelected: false },
         { icon: MdSubscriptions, label: "Subscription", isSelected: false },
         { icon: TbTemplate, label: "Templates", isSelected: false },
-        { icon: CiHeart, label: "Favorite Template", isSelected: false }
+        { icon: CiHeart, label: "Favorite Template", isSelected: false },
     ]);
 
     const [secondMenuItems, setSecondMenuItems] = useState<SecondMenuItem[]>([
@@ -171,37 +187,34 @@ export default function AppContextProvider({ children }: { children: React.React
             icon: <RiReplay30Line className="text-[18px] text-purple-600" />,
             isSelected: false,
         },
-    ])
+    ]);
 
     const [allTemplates, setAllTemplates] = useState(templatesArray);
 
-    const [templatesForDropDown, setTemplatesForDropDown] = useState<
-        SingleTemplateExtended[]
-    >(() => {
+    const [templatesForDropDown, setTemplatesForDropDown] = useState<SingleTemplateExtended[]>(() => {
         return allTemplates.map((SingleTemplate) => {
             return { ...SingleTemplate, isSelected: false };
         });
-    })
+    });
 
     const [allHistoryData, setAllHistoryData] = useState<HistoryData[]>([]);
-    const [templatesFilteringItems, setTemplatesFilteringItems] = useState<SingleFilteringItem[]>(templateFilteringItemsArray)
-    // console.log(newHistoryData);
+    const [templatesFilteringItems, setTemplatesFilteringItems] =
+        useState<SingleFilteringItem[]>(templateFilteringItemsArray);
 
-    // Handle window resize
+    // Window resize listener
     useEffect(() => {
         function handleResize() {
-            setWindowWidth(window.innerWidth);         // ✅ updated
-            setStretchSideBar(false);                  // cancel stretch when resized
+            setWindowWidth(window.innerWidth);
+            setStretchSideBar(false);
         }
 
-        handleResize(); // initial check
+        handleResize();
         window.addEventListener("resize", handleResize);
 
         return () => {
             window.removeEventListener("resize", handleResize);
         };
     }, []);
-
 
     // Restore dark mode & sidebar state
     useEffect(() => {
@@ -216,31 +229,85 @@ export default function AppContextProvider({ children }: { children: React.React
             setIsDarkMode(savedDarkModeValue === "true");
         }
     }, []);
-
     useEffect(() => {
-        async function fetchDataHistory() {
-            await new Promise((resolve) => {
-                setTimeout(resolve, 1780);
-            });
+        async function fetchHistoryFromDB() {
+            if (user) {
+                // No need to set loading here, as fetchUserData already handles it
+                try {
+                    const response = await fetch(`/api/histories?clerkUserId=${user.id}`);
+                    if (!response.ok) throw new Error('Failed to fetch history');
 
-            setAllHistoryData(newHistoryData);
+                    const data = await response.json();
+                    setAllHistoryData(data.histories);
+                } catch (error) {
+                    console.error("Error fetching history:", error);
+                    toast.error("Could not load your history.");
+                }
+            }
         }
+        fetchHistoryFromDB();
+    }, [user]);
 
-        fetchDataHistory();
-    }, [])
-    // console.log(allHistoryData);
+    const [fakeUser, setFakeUser] = useState<User>({
+        isPro: false,
+        cumulativeWords: 0,
+        firstName: "",
+        lastName: "",
+        userId: "",
+        imageUrl: "",
+    });
 
-    const [fakeUser, setFakeUser] = useState<FakeUser>({ isPro: false, cumulativeWords: 0 });
+    // Fetch user from DB when Clerk user logs in
+    useEffect(() => {
+        async function fetchUserData() {
+            if (user) {
+                try {
+                    const response = await fetch(`/api/users?clerkId=${user.id}`, {
+                        method: "GET",
+                    });
 
-    const [openContentGeneratorForm, setOpenContentGeneratorForm] = useState<boolean>(false);
+                    const userData = await response.json();
 
-    const [selectedTemplate, setSelectedTemplate] = useState<SingleTemplateExtended | null>(null);
+                    if (response.ok) {
+                        console.log("User data fetched successfully:", userData);
+
+                        const userObject = {
+                            isPro: userData.isPro ?? false,
+                            cumulativeWords: userData.accumulatedWords ?? 0,
+                            userId: userData.clerkUserId,
+                            lastName: userData.lastName ?? "",
+                            firstName: userData.firstName ?? "",
+                            email: userData.emailAddress ?? "",
+                            imageUrl: userData.imageUrl ?? "",
+                        };
+
+                        console.log(userObject);
+                        setFakeUser(userObject);
+                    } else {
+                        console.error("Failed to fetch user data:", userData.error);
+                    }
+                } catch (error) {
+                    console.error("Error fetching user data:", error);
+                }
+            }
+        }
+        fetchUserData();
+    }, [user]);
+
+
+
+    const [openContentGeneratorForm, setOpenContentGeneratorForm] =
+        useState<boolean>(false);
+
+    const [selectedTemplate, setSelectedTemplate] =
+        useState<SingleTemplateExtended | null>(null);
 
     const [contentGenerated, setContentGenerated] = useState<string>("");
 
-    const [openConfirmationWindow, setOpenConfirmationWindow] = useState<boolean>(false);
-    const [selectedHistoryEntry, setSelectedHistoryEntry] = useState<HistoryData | null>(null);
-
+    const [openConfirmationWindow, setOpenConfirmationWindow] =
+        useState<boolean>(false);
+    const [selectedHistoryEntry, setSelectedHistoryEntry] =
+        useState<HistoryData | null>(null);
 
     return (
         <AppContext.Provider
@@ -274,3 +341,7 @@ export default function AppContextProvider({ children }: { children: React.React
 export function useAppContext() {
     return useContext(AppContext);
 }
+function setIsLoading(arg0: boolean) {
+    throw new Error("Function not implemented.");
+}
+

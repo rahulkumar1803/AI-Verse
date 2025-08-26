@@ -1,41 +1,38 @@
 import { Webhook } from 'svix';
 import { headers } from 'next/headers';
 import { WebhookEvent } from '@clerk/nextjs/server';
-
 import User from '@/app/models/UserSchema';
 import connect from '@/app/lib/connect';
+import { NextResponse } from 'next/server';
+
+// DO NOT add 'use client' to this file.
+// This function must run on the server to access headers and environment variables.
 
 export async function POST(req: Request) {
-  // You can find this in the Clerk Dashboard -> Webhooks -> choose the endpoint
   const WEBHOOK_SECRET = process.env.WEBHOOK_SECRET;
 
   if (!WEBHOOK_SECRET) {
     throw new Error('Please add WEBHOOK_SECRET from Clerk Dashboard to .env or .env.local');
   }
 
-  // Get the headers
+  // Get the headers using the server-side headers() function
   const headerPayload = req.headers;
   const svix_id = headerPayload.get("svix-id");
   const svix_timestamp = headerPayload.get("svix-timestamp");
   const svix_signature = headerPayload.get("svix-signature");
 
-  // If there are no headers, error out
   if (!svix_id || !svix_timestamp || !svix_signature) {
-    return new Response('Error occured -- no svix headers', {
-      status: 400
-    });
+    return new Response('Error: Missing svix headers', { status: 400 });
   }
 
   // Get the body
   const payload = await req.json();
   const body = JSON.stringify(payload);
 
-  // Create a new Svix instance with your secret.
+  // Verify the webhook
   const wh = new Webhook(WEBHOOK_SECRET);
-
   let evt: WebhookEvent;
 
-  // Verify the payload with the headers
   try {
     evt = wh.verify(body, {
       "svix-id": svix_id,
@@ -44,41 +41,60 @@ export async function POST(req: Request) {
     }) as WebhookEvent;
   } catch (err) {
     console.error('Error verifying webhook:', err);
-    return new Response('Error occured', {
-      status: 400
-    });
+    return new Response('Error occured', { status: 400 });
   }
 
-  // Get the ID and type
-  const { id } = evt.data;
   const eventType = evt.type;
+  await connect();
 
-  console.log(`Webhook with and ID of ${id} and type of ${eventType}`);
-  console.log('Webhook body:', body);
+  // --- Handle Events ---
 
-  // Handle the event
   if (eventType === 'user.created') {
-    const { id, email_addresses } = evt.data;
-
-    const newUser = {
-      clerkUserId: id,
-      emailAddress: email_addresses[0].email_address,
-      isPro: false,
-      accumulatedWords: 0,
-    };
-
+    const { id, email_addresses, first_name, last_name, image_url } = evt.data;
     try {
-      await connect(); // Connect to your database
-      await User.create(newUser);
-      console.log("User created and saved to database:", newUser);
+      await User.create({
+        clerkUserId: id,
+        emailAddress: email_addresses[0].email_address,
+        firstName: first_name,
+        lastName: last_name,
+        imageUrl: image_url,
+        isPro: false,
+        accumulatedWords: 0,
+      });
+      console.log(`✅ User ${id} was created.`);
     } catch (error) {
-      console.error("Error creating user in database:", error);
+      console.error('Error creating user:', error);
+    }
+  }
+
+  if (eventType === 'user.updated') {
+    const { id, first_name, last_name, image_url } = evt.data;
+    try {
+      await User.findOneAndUpdate(
+        { clerkUserId: id },
+        { 
+          firstName: first_name, 
+          lastName: last_name,
+          imageUrl: image_url,
+        },
+      );
+      console.log(`✅ User ${id} was updated.`);
+    } catch (error) {
+      console.error('Error updating user:', error);
     }
   }
 
   if (eventType === 'user.deleted') {
-      // You can add logic here to delete the user from your database
-      console.log('User with ID was deleted:', id);
+    const { id } = evt.data;
+    if (!id) {
+        return NextResponse.json({ error: 'User ID missing' }, { status: 400 });
+    }
+    try {
+      await User.deleteOne({ clerkUserId: id });
+      console.log(`✅ User ${id} was deleted.`);
+    } catch (error) {
+      console.error('Error deleting user:', error);
+    }
   }
 
   return new Response('', { status: 200 });
