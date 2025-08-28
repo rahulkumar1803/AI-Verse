@@ -27,10 +27,14 @@ export default function Page() {
 // Navbar Component
 function Navbar() {
   return (
-    <nav className="fixed top-0 left-0 w-full z-50 flex p-6 px-28 max-sm:mt-9 items-center justify-around max-sm:flex-col bg-transparent shadow-md">
-      <Logo />
-      <Buttons />
-    </nav>
+    <nav
+  className="fixed top-0 left-0 w-full z-50 flex p-6 px-28 
+             max-sm:mt-9 items-center justify-around max-sm:flex-col 
+             bg-white/30 backdrop-blur-md shadow-md border-b border-white/20"
+>
+  <Logo />
+  <Buttons />
+</nav>
 
   );
 }
@@ -100,28 +104,37 @@ function Buttons() {
 
 function Home() {
   return (
-    <div className="min-h-screen bg-gradient-to-br from-slate-300 to-slate-200 text-white pt-24">
+    <div className="min-h-screen bg-gradient-to-br from-slate-300 to-slate-200 text-white pt-65 md:pt-24">
 
-      {/* Hero Section */}
-      <section className="min-h-[70vh] flex flex-row justify-center rounded-t-3xl items-center text-center px-6 bg-gradient-to-br from-slate-300 to-slate-100">
-        <div>
-          <h1 className="text-5xl font-bold mb-4 bg-gradient-to-r from-violet-400 to-violet-700 bg-clip-text text-transparent">
+{/* Hero Section */}
+      <section className="flex flex-col md:flex-row justify-center 
+                          items-center text-center px-6 py-12
+                          rounded-t-3xl bg-gradient-to-br from-slate-300 to-slate-100
+                          h-auto md:min-h-[70vh]">
+        {/* Text Section */}
+        <div className="flex-1">
+          <h1 className="text-3xl sm:text-4xl md:text-5xl font-bold mb-4 
+                         bg-gradient-to-r from-violet-400 to-violet-700 
+                         bg-clip-text text-transparent">
             Welcome to Ai-Verse
           </h1>
-          <p className="text-lg max-w-2xl text-violet-600">
-            Explore the future of <span className="text-violet-500 font-semibold">Artificial Intelligence</span>.
+          <p className="text-base md:text-lg max-w-2xl text-violet-600 mx-auto">
+            Explore the future of{" "}
+            <span className="text-violet-500 font-semibold">Artificial Intelligence</span>.
             Discover projects, insights, and a community passionate about AI innovations.
           </p>
         </div>
 
+        {/* Image Section */}
         <div className="flex-1 mt-10 md:mt-0 flex justify-center">
           <img
             src="https://cdn-icons-png.flaticon.com/512/4712/4712109.png"
             alt="AI Robot"
-            className="w-72 md:w-96 drop-shadow-lg hover:scale-105 transition"
+            className="w-48 sm:w-64 md:w-96 drop-shadow-lg hover:scale-105 transition"
           />
         </div>
       </section>
+
 
       {/* About Section */}
       <section className="py-20 px-6 text-center bg-gradient-to-br from-slate-100 to-slate-300 rounded-t-3xl shadow-lg">
