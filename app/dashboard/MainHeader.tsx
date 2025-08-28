@@ -93,7 +93,6 @@ const MainHeader = () => {
                             <p className="text-xs text-slate-400">{fakeUser.isPro ? "Pro Plan" : "Free Plan"}</p>
                         </div>
                     )}
-                    <MdKeyboardArrowDown className='text-slate-400 text-[18px]' />
                 </div>
                 {windowWidth <= 995 && (
                     <FiMenu

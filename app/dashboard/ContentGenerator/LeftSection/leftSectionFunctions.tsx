@@ -13,71 +13,93 @@ export async function generateContent(
   toneOrStyleInput: string,
   selectLanguage: string,
   audienceInput: string,
-  keywords: string[],
+  keywords: string[] // This parameter is kept for potential future use
 ) {
+  // 1. Initial check to ensure a template is selected
+  if (!selectedTemplate?.title || !prompts[selectedTemplate.title]) {
+    console.error("Unknown or null template:", selectedTemplate);
+    return {
+      theTitle: "Error",
+      prompt: "",
+      content: "Please select a valid template to begin.",
+    };
+  }
+
   let prompt = "";
   let theTitle = "";
+  const templateConfig = prompts[selectedTemplate.title];
 
-  switch (selectedTemplate?.title) {
+  // 2. Build the prompt and title using the selected template's functions
+  // This switch statement correctly passes the required arguments for each case.
+  switch (selectedTemplate.title) {
     case "Post Title":
+    case "Text Summarizer":
+    case "Content Rewriter":
+    case "Product Description":
+    case "Paragraph Text":
+      prompt = templateConfig.content(mainTopicInput, toneOrStyleInput);
+      theTitle = templateConfig.title(mainTopicInput);
+      break;
+
     case "Blog Tags":
     case "Youtube Hashtags":
-      prompt = prompts[selectedTemplate.title].content(mainTopicInput, toneOrStyleInput);
-      theTitle = prompts[selectedTemplate.title].title(mainTopicInput);
+      prompt = templateConfig.content(mainTopicInput);
+      theTitle = templateConfig.title(mainTopicInput);
       break;
 
     case "Code Generator":
-      prompt = prompts["Code Generator"].content(mainTopicInput, selectLanguage);
-      theTitle = prompts["Code Generator"].title(mainTopicInput);
+      prompt = templateConfig.content(mainTopicInput, selectLanguage);
+      theTitle = templateConfig.title(mainTopicInput, selectLanguage);
       break;
 
     case "Email Newsletter":
     case "Question & Answer":
     case "Facebook Snippet":
-      prompt = prompts[selectedTemplate.title].content(mainTopicInput, toneOrStyleInput, audienceInput);
-      theTitle = prompts[selectedTemplate.title].title(mainTopicInput);
-      break;
-
-    case "Text Summarizer":
-    case "Content Rewriter":
-    case "Product Description":
-    case "Paragraph Text":
-      prompt = prompts[selectedTemplate.title].content(mainTopicInput, toneOrStyleInput);
-      theTitle = prompts[selectedTemplate.title].title(mainTopicInput);
+      prompt = templateConfig.content(mainTopicInput, toneOrStyleInput, audienceInput);
+      theTitle = templateConfig.title(mainTopicInput);
       break;
 
     default:
-      console.log("`Unknown template`");
-      break;
+      // This case should ideally not be reached if the template is valid
+      return {
+        theTitle: "Template Not Handled",
+        prompt: "",
+        content: `The selected template "${selectedTemplate.title}" is not configured in generateContent function.`,
+      };
   }
 
-  const content: string = await new Promise((resolve) => {
-    setTimeout(() => {
-      const exampleCode = `
-      // This is a simple function to calculate the sum of two numbers
-      function sum(a, b) {
-          return a + b;
-      }
+  // 3. Call the backend API route with the generated prompt
+  try {
+    const response = await fetch('/api/generate', { // Assumes your API route is at '/api/gemini'
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+      },
+      body: JSON.stringify({ prompt }),
+    });
 
-      // Calling the function with values 5 and 3
-      const result = sum(5, 3);
+    if (!response.ok) {
+      // Handle HTTP errors like 404 or 500
+      const errorText = await response.text();
+      throw new Error(`API call failed with status ${response.status}: ${errorText}`);
+    }
 
-      // Outputting the result to the console
-      console.log("The sum is:", result); // Output: The sum is: 8
+    const data = await response.json();
+    const content: string = data.text; // Extract the generated text from the response
 
-      /*
-        Multi-line Comment:
-        This example demonstrates how to define and use a basic function in JavaScript.
-        The sum function adds two numbers and returns the result and fun.
-      */
-    `;
-      resolve(exampleCode);
-    }, 1200);
-  });
+    // 4. Return the complete result object
+    return { theTitle, prompt, content };
 
-
-  return { theTitle, prompt, content };
+  } catch (error) {
+    console.error("Failed to generate content via API:", error);
+    return {
+      theTitle,
+      prompt,
+      content: "Sorry, an error occurred while communicating with the AI. Please check the console for details.",
+    };
+  }
 }
+
 
 export default function renderFormFields() {
   const {
