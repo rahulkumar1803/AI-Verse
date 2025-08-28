@@ -37,7 +37,7 @@ const MainHeader = () => {
 
     useEffect(() => {
         if (!fakeUser.isPro) {
-            if (fakeUser.cumulativeWords >= 1000) {
+            if (fakeUser.cumulativeWords >= 100000000) {
                 setDisabledGenerateBtn(true);
             }
         } else {

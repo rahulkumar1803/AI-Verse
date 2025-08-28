@@ -59,7 +59,7 @@ export default function TemplateSingleCard({
           <h2
             onClick={() => {
               if (!fakeUser.isPro) {
-                if (fakeUser.cumulativeWords >= 1000) {
+                if (fakeUser.cumulativeWords >= 100000000) {
                   gotoTheProPlanPage();
                   return;
                 }
