@@ -159,7 +159,7 @@ function SearchComponent() {
         if (filteredResults.length === 0) {
             return (
                 <div
-                    className="bg-white w-[340px] z-[60] p-3 absolute top-14 rounded-md shadow-md flex flex-col gap-5 text-slate-400 text-[12px]"
+                    className={`${!isDarkMode ? "bg-white" : "bg-slate-800"} w-[340px] z-[60] p-3 absolute top-14 rounded-md shadow-md flex flex-col gap-5 text-slate-400 text-[12px]`}
                 >
                     no template found...
                 </div>
@@ -168,7 +168,7 @@ function SearchComponent() {
 
         return (
             <div
-                className={`bg-white w-[340px] ${dynamicHeight} z-[60] p-3 absolute top-14 rounded-md shadow-md flex flex-col gap-3`}
+                className={`${!isDarkMode ? "bg-white" : "bg-slate-800"} w-[340px] ${dynamicHeight} z-[60] p-3 absolute top-14 rounded-md shadow-md flex flex-col gap-3 `}
             >
                 <div className="h-[97%] overflow-y-auto">
                     {filteredResults.map((singleTemplate, index) => (
@@ -267,7 +267,7 @@ function SearchComponent() {
                     setSearch("");
                 }}
                 className={`p-2 flex items-center justify-between gap-4 hover:border rounded-md
-                 hover:bg-purple-50 border-purple-500 ${adjustOpacity()
+                 ${isDarkMode ? "hover:bg-slate-700" : "hover:bg-purple-50"} border-purple-500 ${adjustOpacity()
                     } select-auto cursor-pointer`}
             >
                 <div className='flex items-center w-full relative'>
