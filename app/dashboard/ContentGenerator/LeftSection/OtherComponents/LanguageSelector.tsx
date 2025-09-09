@@ -49,6 +49,7 @@ const LanguageSelector = () => {
         <option value="php">PHP</option>
         <option value="typescript">TypeScript</option>
         <option value="go">Go</option>
+        <option value="c++">c++</option>
       </select>
         {errors[getIndexSelectedLanguageError].show && (
           <span className="text-sm text-red-600 mt-1">
