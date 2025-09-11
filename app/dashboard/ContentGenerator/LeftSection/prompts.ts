@@ -31,7 +31,8 @@ export const prompts: Prompts = {
 
     'Code Generator': {
         content: (mainTopic: string, language: string) =>
-            `Generate ${language} code for the following task: ${mainTopic}.`,
+            `Generate ${language} code for the following task: ${mainTopic}.Give me code only do not give the unnecessary comments
+        or explanations just provide with the code.`,
         title: (mainTopic: string, language: string) =>
             `${language} Code for ${mainTopic}`,
     },
